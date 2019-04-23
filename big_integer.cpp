@@ -50,11 +50,7 @@ big_integer::big_integer(std::string const &str) {
     *this = res;
 }
 
-big_integer &big_integer::operator=(big_integer const &other) {
-    big_integer tmp = big_integer(other);
-    swap(tmp, *this);
-    return *this;
-}
+big_integer &big_integer::operator=(big_integer const &other) = default;
 
 big_integer big_integer::operator-() const {
     big_integer res = *this;
@@ -246,9 +242,10 @@ big_integer operator*(big_integer const &a, big_integer const &b) {
 void shl_sub(big_integer &a, big_integer const &b, size_t sh) {
     ull cur;
     bool carry = false;
+    a.change_len(b.len() + sh);
     for (size_t i = 0; i < b.len(); ++i) {
         cur = (ull)a[i + sh] - b[i] - carry;
-        carry = (bool)(cur >> 63);
+        carry = (cur >> 63) > 0;
         a[i + sh] = (uint)cur;
     }
     for (size_t i = b.len() + sh; i < a.len() && carry; ++i) {

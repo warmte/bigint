@@ -8,3 +8,7 @@ CMakeLists.txt
 Makefile
 bigint.cbp
 main.cpp
+
+big_integer_main
+big_integer_testing
+perf*
