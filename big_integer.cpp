@@ -184,9 +184,10 @@ big_integer operator+(big_integer first, big_integer const &second) {
         first[i] = (uint)cur;
         carry = uint(cur >> 32);
     }
-    first.neg = ((zero + zero_oth + carry) >> 31) > 0;
-    if (zero + zero_oth + carry != (first.neg ? (MAX - 1) : 0)) {
-        first.digits.push_back((uint)(zero + zero_oth + carry));
+    uint sum = zero + zero_oth + carry;
+    first.neg = (sum >> 31) > 0;
+    if (sum != (first.neg ? (MAX - 1) : 0)) {
+        first.digits.push_back((uint)sum);
     }
     first.normalize();
     return first;
