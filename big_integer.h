@@ -39,7 +39,7 @@ struct big_integer {
     friend big_integer operator+(big_integer a, big_integer const& b);
     friend big_integer operator-(big_integer const &a, big_integer const& b);
     friend big_integer operator*(big_integer const &a, big_integer const& b);
-    friend big_integer operator/(big_integer const &first, big_integer const& second);
+    friend big_integer operator/(big_integer a, big_integer b);
     friend big_integer operator%(big_integer const &a, big_integer const& b);
 
     big_integer& operator+=(big_integer const &other);
@@ -73,9 +73,10 @@ private:
     uint& operator[](size_t position);
     void set_zero();
     friend void shl_sub(big_integer &a, big_integer const &b, size_t sh);
+    friend bool shl_more(big_integer const &a, big_integer const &b, size_t sh);
 
     friend big_integer mul_uint_bigint(big_integer const &num, uint b);
-    uint safe_get(size_t i) const;
+    uint safe_get(size_t i, uint zero) const;
 };
 
 std::ostream& operator<<(std::ostream& s, big_integer const& a);

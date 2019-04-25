@@ -197,18 +197,13 @@ big_integer operator-(big_integer const &a, big_integer const &b) {
 }
 
 big_integer mul_uint_bigint(big_integer const &a, uint b) {
-    if (b == 0) {
-        return big_integer(0);
-    }
-    if (b == 1) {
-        return a;
-    }
     big_integer res(a.neg, a.len() + 1);
     ull carry = 0;
 
     for (size_t i = 0; i < a.len(); ++i) {
-        res[i] = (uint) ((carry + (ull)a[i] * b) & 0xffffffff);
-        carry = (carry + (ull)a[i] * b) >> 32;
+        ull cur = carry + (ull)a[i] * b;
+        res[i] = (uint)cur;
+        carry = cur >> 32;
     }
     res[res.len() - 1] = (uint)carry;
     res.normalize();
@@ -255,30 +250,37 @@ void shl_sub(big_integer &a, big_integer const &b, size_t sh) {
     a.neg = carry;
 }
 
-big_integer operator/(big_integer const &first, big_integer const &second) {
-    if (first < 0 || second < 0) {
-        return (first < 0 ? -first : first) / (second < 0 ? -second : second) * (first.neg == second.neg ? 1 : -1);
+bool shl_more(big_integer const &a, big_integer const &b, size_t sh) {
+    if (b.len() + sh != a.len())
+        return a.len() > b.len() + sh;
+    for (size_t i = b.len() - 1; i != (size_t)-1; i--) {
+        if (a[i + sh] != b[i])
+            return a[i + sh] > b[i];
     }
-    big_integer a = first, b = second;
+    return true;
+}
+
+big_integer operator/(big_integer a, big_integer b) {
+    if (a.neg || b.neg) {
+        bool fl = a.neg != b.neg;
+        a = (a.neg ? -a : a) / (b.neg ? -b : b);
+        return fl ? -a : a;
+    }
     if (a < b || a == 0) {
         return 0;
-    }
-    if (a == b) {
-        return 1;
     }
     a = a << __builtin_clz(b.digits.back());
     b = b << __builtin_clz(b.digits.back());
     size_t n = b.len(), m = a.len() - b.len();
-    big_integer q = 0;
-    q.change_len(m + 1);
-    if (a >= (b << (m * 32))) {
+    big_integer q(false, m + 1);
+    if (shl_more(a, b, m)) {
         q[m] = 1;
         shl_sub(a, b, m);
     }
 
+    uint zero = uint(MAX - a.neg);
     for (size_t i = m - 1; i != (size_t)-1; --i) {
-        ull q1 = ((ull(a.safe_get(n + i)) << 32) + a.safe_get(n + i - 1)) / b[n - 1];
-        q[i] = (uint)std::min(MAX - 1, q1);
+        q[i] = (uint)std::min(MAX - 1, ((ull(a.safe_get(n + i, zero)) << 32) + a.safe_get(n + i - 1, zero)) / b[n - 1]);
         shl_sub(a, mul_uint_bigint(b, q[i]), i);
         while (a.neg) {
             q[i] -= 1;
@@ -448,6 +450,7 @@ void big_integer::normalize() {
 
 void big_integer::set_zero() {
     digits.resize(1);
+    digits.shrink_to_fit();
     digits[0] = neg ? (uint)(MAX - 1) : 0;
 }
 
@@ -464,6 +467,6 @@ uint& big_integer::operator[](size_t position) {
     return digits[position];
 }
 
-uint big_integer::safe_get(size_t i) const {
-    return i < len() ? digits[i] : (neg ? (uint)(MAX - 1) : 0);
+uint big_integer::safe_get(size_t i, uint zero) const {
+    return i < len() ? digits[i] : zero;
 }
