@@ -187,7 +187,7 @@ big_integer operator+(big_integer first, big_integer const &second) {
     uint sum = zero + zero_oth + carry;
     first.neg = (sum >> 31) > 0;
     if (sum != (first.neg ? (MAX - 1) : 0)) {
-        first.digits.push_back((uint)sum);
+        first.digits.push_back(sum);
     }
     first.normalize();
     return first;
@@ -212,19 +212,21 @@ big_integer mul_uint_bigint(big_integer const &a, uint b) {
 }
 
 big_integer operator*(big_integer const &a, big_integer const &b) {
-    bool negative = a.neg ^ b.neg;
-    big_integer first = abs(a), second = abs(b);
+    if (a.neg || b.neg) {
+        bool fl = a.neg != b.neg;
+        return !fl ? (a.neg ? -a : a) * (b.neg ? -b : b) : -((a.neg ? -a : a) * (b.neg ? -b : b));
+    }
     big_integer res = 0;
-    res.change_len(first.len() + second.len() + 2);
+    res.change_len(a.len() + b.len() + 2);
 
-    for (size_t i = 0; i < first.len(); ++i) {
+    for (size_t i = 0; i < a.len(); ++i) {
         uint carry = 0;
-        for (size_t j = 0; j < second.len(); ++j) {
-            ull cur = (ull)first[i] * second[j] + carry + res[i + j];
+        for (size_t j = 0; j < b.len(); ++j) {
+            ull cur = (ull)a[i] * b[j] + carry + res[i + j];
             res[i + j] = (uint)cur;
             carry = (uint)(cur >> 32);
         }
-        for (size_t j = second.len(); i + j < res.len() && carry; ++j) {
+        for (size_t j = b.len(); i + j < res.len() && carry; ++j) {
             ull cur = (ull)carry + res[i + j];
             res[i + j] = (uint)cur;
             carry = (uint)(cur >> 32);
@@ -232,7 +234,7 @@ big_integer operator*(big_integer const &a, big_integer const &b) {
     }
 
     res.normalize();
-    return negative ? -res : res;
+    return res;
 }
 
 void shl_sub(big_integer &a, big_integer const &b, size_t sh) {
